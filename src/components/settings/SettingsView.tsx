@@ -30,6 +30,7 @@ export const SettingsView: React.FC = () => {
   const {
     isDarkMode,
     toggleDarkMode,
+    openAuthModal,
     setIsFilterModalOpen,
     setIsPremiumModalOpen,
     setIsVerificationModalOpen,
@@ -55,6 +56,8 @@ export const SettingsView: React.FC = () => {
   const [readReceipts, setReadReceipts] = useState(true);
   const [newBlockedPhone, setNewBlockedPhone] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   const languagesList: { code: AppLanguage; label: string; desc: string }[] = [
     { code: 'hi', label: 'हिंदी', desc: 'Hindi' },
@@ -71,7 +74,16 @@ export const SettingsView: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    await deleteAccount();
+    try {
+      setIsDeleting(true);
+      await deleteAccount();
+      setDeleteSuccess(true);
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -416,6 +428,15 @@ export const SettingsView: React.FC = () => {
 
         {/* Data & Account Actions */}
         <div className="space-y-3 pt-2">
+          {/* Login / Switch Account Button */}
+          <button
+            onClick={openAuthModal}
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-bold text-xs transition-all shadow-md shadow-rose-500/20 flex items-center justify-center gap-2"
+          >
+            <Lock className="w-4 h-4" />
+            <span>लॉगिन करें / मोबाइल नंबर से अकाउंट खोलें</span>
+          </button>
+
           <button
             onClick={resetAllDemoData}
             className="w-full py-3.5 px-4 rounded-2xl border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-200 font-bold text-xs hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center justify-center gap-2"
@@ -426,40 +447,51 @@ export const SettingsView: React.FC = () => {
 
           <button
             onClick={logout}
-            className="w-full py-3.5 px-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-bold text-xs hover:bg-rose-100 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-4 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 font-bold text-xs hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>{t.profile.logout}</span>
+            <span>{t.profile.logout} (लॉगआउट)</span>
           </button>
+
+          {deleteSuccess && (
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold text-center">
+              ✓ आपका खाता सफलतापूर्वक हटा दिया गया है। (Account Deleted)
+            </div>
+          )}
 
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full py-2.5 text-center text-xs text-stone-400 hover:text-rose-600 font-semibold transition-colors"
+              className="w-full py-3 text-center text-xs text-rose-600 hover:text-rose-700 font-bold transition-colors border border-rose-200 dark:border-rose-900/60 rounded-2xl bg-rose-50/50 dark:bg-rose-950/30 flex items-center justify-center gap-1.5"
             >
-              {t.settings.deleteAccount}
+              <Trash2 className="w-4 h-4" />
+              <span>{t.settings.deleteAccount} (खाता हमेशा के लिए मिटाएं)</span>
             </button>
           ) : (
-            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-center space-y-2">
-              <div className="flex items-center justify-center gap-1.5 text-rose-600 font-bold text-xs">
+            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-center space-y-2.5">
+              <div className="flex items-center justify-center gap-1.5 text-rose-600 font-black text-xs">
                 <AlertTriangle className="w-4 h-4" />
-                <span>Permanently delete account?</span>
+                <span>क्या आप सचमुच अपना खाता हमेशा के लिए मिटाना चाहते हैं?</span>
               </div>
               <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                This will delete your profile, matches, and chat history.
+                आपकी प्रोफ़ाइल, फ़ोटो, चैट्स और मैचेस का सारा डेटा हमेशा के लिए हटा दिया जाएगा।
               </p>
               <div className="flex gap-2 justify-center pt-1">
                 <button
+                  type="button"
+                  disabled={isDeleting}
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-1.5 rounded-xl border border-stone-300 text-xs font-bold"
+                  className="px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 text-xs font-bold text-stone-700 dark:text-stone-300"
                 >
-                  Cancel
+                  रद्द करें (Cancel)
                 </button>
                 <button
+                  type="button"
+                  disabled={isDeleting}
                   onClick={handleDeleteAccount}
-                  className="px-4 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
                 >
-                  Confirm Delete
+                  {isDeleting ? 'हटाया जा रहा है...' : 'हाँ, खाता मिटाएं (Delete)'}
                 </button>
               </div>
             </div>

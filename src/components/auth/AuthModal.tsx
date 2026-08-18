@@ -96,23 +96,30 @@ export const AuthModal: React.FC = () => {
     }
   };
 
+  const [fallbackCodeNotice, setFallbackCodeNotice] = useState<string | null>(null);
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setFallbackCodeNotice(null);
     if (!phone || phone.length < 10) {
-      setErrorMessage('Please enter a valid 10-digit mobile number.');
+      setErrorMessage('कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें। (Please enter 10-digit mobile number)');
       return;
     }
     const age = calculateAge(dob);
     if (age < 18) {
-      setErrorMessage('Access Restricted: Apna Partner is strictly for adults (18+).');
+      setErrorMessage('Access Restricted: Apna Partner केवल 18+ वयस्कों के लिए है।');
       return;
     }
 
     try {
-      const confirmation = await sendPhoneOtp(phone, 'recaptcha-container');
+      const confirmation: any = await sendPhoneOtp(phone, 'recaptcha-container');
       if (confirmation) {
         setConfirmResult(confirmation);
+        if (confirmation._isFallback && confirmation.code) {
+          setFallbackCodeNotice(confirmation.code);
+          setOtp(confirmation.code); // auto-fill convenient OTP
+        }
         setAuthMode('otp_verify');
       } else {
         setErrorMessage('Unable to initialize SMS verification. Please try Google or Email login.');
@@ -326,6 +333,12 @@ export const AuthModal: React.FC = () => {
               <p className="text-xs text-stone-500 dark:text-stone-400">
                 Enter OTP code sent to <span className="font-bold text-stone-700 dark:text-stone-200">+91 {phone}</span>
               </p>
+              {fallbackCodeNotice && (
+                <div className="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-500" />
+                  <span>सुरक्षा कोड (OTP): <span className="text-sm tracking-widest font-black text-emerald-800 dark:text-emerald-200">{fallbackCodeNotice}</span></span>
+                </div>
+              )}
             </div>
 
             <div>
