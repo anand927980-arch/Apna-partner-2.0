@@ -142,31 +142,28 @@ export const ProfileEditModal: React.FC = () => {
 
     try {
       setIsSaving(true);
-      await saveUserProfile(
-        {
-          name: name.trim(),
-          dateOfBirth: dob,
-          age: currentAge,
-          gender,
-          lookingFor,
-          district,
-          subDistrict,
-          bio: bio.trim(),
-          education: education.trim(),
-          profession: profession.trim(),
-          photoURL,
-          additionalPhotos,
-          interests: selectedInterests,
-          languages: selectedLanguages,
-          relationshipGoal,
-        },
-        photoURL
-      );
+      await saveUserProfile({
+        name: name.trim(),
+        dateOfBirth: dob,
+        age: currentAge,
+        gender,
+        lookingFor,
+        district,
+        subDistrict,
+        bio: bio.trim(),
+        education: education.trim(),
+        profession: profession.trim(),
+        photoURL,
+        additionalPhotos,
+        interests: selectedInterests,
+        languages: selectedLanguages,
+        relationshipGoal,
+      });
 
-      setSuccessMsg('Profile updated successfully in Firebase! ✨');
+      setSuccessMsg('प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई! (Profile Updated) ✨');
       setTimeout(() => {
         setIsProfileEditOpen(false);
-      }, 800);
+      }, 400);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to update profile.');
     } finally {
@@ -567,7 +564,7 @@ export const ProfileEditModal: React.FC = () => {
               className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-bold text-xs shadow-md shadow-rose-500/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-60"
             >
               <Check className="w-4 h-4" />
-              <span>{isSaving ? 'Uploading to Cloud...' : 'Save Changes'}</span>
+              <span>{isSaving ? 'सहेजा जा रहा है... (Saving...)' : 'बदलाव सुरक्षित करें (Save Changes)'}</span>
             </button>
           </div>
         </form>
