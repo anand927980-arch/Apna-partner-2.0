@@ -1,0 +1,146 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile in Apna Partner dating app",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "dateOfBirth": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["man", "woman", "other"] },
+        "lookingFor": { "type": "string", "enum": ["man", "woman", "everyone"] },
+        "district": { "type": "string", "maxLength": 100 },
+        "subDistrict": { "type": "string", "maxLength": 100 },
+        "bio": { "type": "string", "maxLength": 1000 },
+        "photoURL": { "type": "string", "maxLength": 2048 },
+        "additionalPhotos": { "type": "array" },
+        "interests": { "type": "array" },
+        "languages": { "type": "array" },
+        "relationshipGoal": { "type": "string" },
+        "education": { "type": "string", "maxLength": 200 },
+        "profession": { "type": "string", "maxLength": 200 },
+        "isVerified": { "type": "boolean" },
+        "isPremium": { "type": "boolean" },
+        "isOnline": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "name", "gender", "district", "photoURL"]
+    },
+    "SwipeLike": {
+      "title": "SwipeLike",
+      "description": "Right swipe or superlike record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "swiperId": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "superlike"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["swiperId", "targetUserId", "type"]
+    },
+    "SwipePass": {
+      "title": "SwipePass",
+      "description": "Left swipe pass record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "swiperId": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["swiperId", "targetUserId"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Mutual connection record between two users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userIds": { "type": "array" },
+        "users": { "type": "object" },
+        "lastMessage": { "type": "string", "maxLength": 1000 },
+        "lastMessageTimestamp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userIds"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Message inside a match conversation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "matchId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string", "maxLength": 2000 },
+        "timestamp": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["matchId", "senderId", "text"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User safety report",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "reportedUserId": { "type": "string" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "details": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["reporterId", "reportedUserId", "reason"]
+    },
+    "Block": {
+      "title": "Block",
+      "description": "Blocked user record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "blockedUserId": { "type": "string" },
+        "blockedUserName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "blockedUserId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profiles with district and preferences"
+    },
+    "/likes/{likeId}": {
+      "schema": { "$ref": "#/entities/SwipeLike" },
+      "description": "Right swipe records"
+    },
+    "/passes/{passId}": {
+      "schema": { "$ref": "#/entities/SwipePass" },
+      "description": "Pass records"
+    },
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/Match" },
+      "description": "Mutual connection records"
+    },
+    "/matches/{matchId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Private messages exchanged between matched users"
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Confidential user safety reports"
+    },
+    "/blocks/{blockId}": {
+      "schema": { "$ref": "#/entities/Block" },
+      "description": "User blocks list"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Apna Partner",
+  "description": "Modern dating web application for adults in Jharkhand, featuring Chatra district discovery, mutual matching, real-time messaging, and community safety.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
