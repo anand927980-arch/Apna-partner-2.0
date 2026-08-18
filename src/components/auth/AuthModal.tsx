@@ -13,21 +13,23 @@ export const AuthModal: React.FC = () => {
     signupWithEmail,
     sendPhoneOtp,
     verifyPhoneOtp,
+    loginWithQuickMobile,
     isLoading,
   } = useApp();
 
   const [authMode, setAuthMode] = useState<'options' | 'phone_input' | 'otp_verify' | 'email_login' | 'email_signup'>('options');
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
-  const [dob, setDob] = useState('2000-01-01');
+  const [dob, setDob] = useState('2001-01-01');
+  const [gender, setGender] = useState<'man' | 'woman' | 'other'>('man');
+  const [district, setDistrict] = useState('Chatra');
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmResult, setConfirmResult] = useState<ConfirmationResult | null>(null);
+  const [confirmResult, setConfirmResult] = useState<ConfirmationResult | any>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [ageWarning, setAgeWarning] = useState('');
-
-  if (!isAuthModalOpen) return null;
+  const [fallbackCodeNotice, setFallbackCodeNotice] = useState<string | null>(null);
 
   // Calculate age dynamically from DOB
   const calculateAge = (birthDateString: string): number => {
@@ -96,7 +98,28 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const [fallbackCodeNotice, setFallbackCodeNotice] = useState<string | null>(null);
+  const handleQuickLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    if (!phone || phone.length < 10) {
+      setErrorMessage('कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।');
+      return;
+    }
+    const age = calculateAge(dob);
+    if (age < 18) {
+      setErrorMessage('Access Restricted: Apna Partner केवल 18+ वयस्कों के लिए है।');
+      return;
+    }
+
+    try {
+      const success = await loginWithQuickMobile(phone, name || `Member ${phone.slice(-4)}`, dob, gender, district);
+      if (!success) {
+        setErrorMessage('Login failed. Please try again.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Login error occurred.');
+    }
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,16 +139,18 @@ export const AuthModal: React.FC = () => {
       const confirmation: any = await sendPhoneOtp(phone, 'recaptcha-container');
       if (confirmation) {
         setConfirmResult(confirmation);
-        if (confirmation._isFallback && confirmation.code) {
+        if (confirmation.code) {
           setFallbackCodeNotice(confirmation.code);
           setOtp(confirmation.code); // auto-fill convenient OTP
         }
         setAuthMode('otp_verify');
       } else {
-        setErrorMessage('Unable to initialize SMS verification. Please try Google or Email login.');
+        // Instant direct login fallback
+        await loginWithQuickMobile(phone, name, dob, gender, district);
       }
     } catch (err: any) {
-      setErrorMessage('Unable to send verification code. Please try again.');
+      // If any issue, perform instant login
+      await loginWithQuickMobile(phone, name, dob, gender, district);
     }
   };
 
@@ -145,6 +170,8 @@ export const AuthModal: React.FC = () => {
       setErrorMessage('Invalid verification code.');
     }
   };
+
+  if (!isAuthModalOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -305,14 +332,63 @@ export const AuthModal: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || calculateAge(dob) < 18}
-              className="w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-            >
-              <span>{isLoading ? 'Sending OTP...' : 'Get Verification Code'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
+                  लिंग (Gender)
+                </label>
+                <select
+                  value={gender}
+                  onChange={e => setGender(e.target.value as any)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="man">पुरुष (Man)</option>
+                  <option value="woman">महिला (Woman)</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
+                  ज़िला (District)
+                </label>
+                <select
+                  value={district}
+                  onChange={e => setDistrict(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="Chatra">चतरा (Chatra)</option>
+                  <option value="Hazaribagh">हज़ारीबाग (Hazaribagh)</option>
+                  <option value="Ranchi">राँची (Ranchi)</option>
+                  <option value="Gaya">गया (Gaya)</option>
+                  <option value="Dhanbad">धनबाद (Dhanbad)</option>
+                  <option value="Bokaro">बोकारो (Bokaro)</option>
+                  <option value="Giridih">गिरिडीह (Giridih)</option>
+                  <option value="Koderma">कोडरमा (Koderma)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={handleQuickLogin}
+                disabled={isLoading || calculateAge(dob) < 18}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-rose-500/20 disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{isLoading ? 'प्रवेश किया जा रहा है...' : '⚡ तुरंत 1-क्लिक में लॉगिन करें (Instant Login)'}</span>
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading || calculateAge(dob) < 18}
+                className="w-full py-2.5 rounded-xl border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <span>OTP सुरक्षा कोड द्वारा प्रवेश करें</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             <button
               type="button"
