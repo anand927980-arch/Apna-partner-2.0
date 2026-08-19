@@ -11,10 +11,20 @@ import {
   AdminStatistics,
   ReportCategory,
   AppLanguage,
+  NearbyUserCard,
+  NearbyRadiusOption,
+  UserLocationCoordinates,
 } from '../types';
 import { SEED_PROFILES } from '../data/seedProfiles';
 import { TRANSLATIONS, Translations } from '../data/translations';
 import { sounds } from '../utils/soundEffects';
+import {
+  encodeGeohash,
+  calculateDistanceKm,
+  getDistanceInfo,
+  getProfileLocation,
+  calculateNearbyRankingScore,
+} from '../utils/geoUtils';
 import {
   auth,
   db,
@@ -56,10 +66,23 @@ interface AppContextType {
   firebaseUser: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  activeTab: 'discover' | 'likes' | 'matches' | 'profile' | 'admin' | 'settings';
-  setActiveTab: (tab: 'discover' | 'likes' | 'matches' | 'profile' | 'admin' | 'settings') => void;
+  activeTab: 'discover' | 'nearby' | 'likes' | 'matches' | 'profile' | 'admin' | 'settings';
+  setActiveTab: (tab: 'discover' | 'nearby' | 'likes' | 'matches' | 'profile' | 'admin' | 'settings') => void;
   activeChatMatchId: string | null;
   setActiveChatMatchId: (matchId: string | null) => void;
+
+  // Location & Privacy-Safe Nearby Matching
+  userLocation: UserLocationCoordinates | null;
+  locationPermissionStatus: 'prompt' | 'granted' | 'denied' | 'unsupported';
+  locationSharingEnabled: boolean;
+  searchRadiusKm: NearbyRadiusOption;
+  isRequestingLocation: boolean;
+  locationError: string | null;
+  requestLocationPermission: (forceUpdate?: boolean) => Promise<boolean>;
+  setSearchRadiusKm: (radius: NearbyRadiusOption) => void;
+  toggleLocationSharing: (enabled?: boolean) => Promise<void>;
+  updateLocationInFirestore: (lat: number, lon: number, accuracy?: number) => Promise<void>;
+  getNearbyProfiles: (customRadius?: number) => NearbyUserCard[];
 
   // Language & Localization
   language: AppLanguage;
@@ -206,9 +229,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
   // App Navigation & Modals
-  const [activeTab, setActiveTab] = useState<'discover' | 'likes' | 'matches' | 'profile' | 'admin' | 'settings'>('discover');
+  const [activeTab, setActiveTab] = useState<'discover' | 'nearby' | 'likes' | 'matches' | 'profile' | 'admin' | 'settings'>('discover');
   const [activeChatMatchId, setActiveChatMatchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Privacy-Safe Location State
+  const [userLocation, setUserLocation] = useState<UserLocationCoordinates | null>(() => {
+    try {
+      const saved = localStorage.getItem('apna_user_location');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unsupported'>('prompt');
+  const [locationSharingEnabled, setLocationSharingEnabled] = useState<boolean>(true);
+  const [searchRadiusKm, setSearchRadiusKmState] = useState<NearbyRadiusOption>(10);
+  const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState<boolean>(false);
@@ -549,6 +587,198 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const activeMatch = matches.find(m => m.id === activeChatMatchId) || null;
+
+  // Sync user location settings when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.searchRadiusKm) {
+        setSearchRadiusKmState(currentUser.searchRadiusKm as NearbyRadiusOption);
+      }
+      if (typeof currentUser.locationSharingEnabled === 'boolean') {
+        setLocationSharingEnabled(currentUser.locationSharingEnabled);
+      }
+      if (typeof currentUser.latitude === 'number' && typeof currentUser.longitude === 'number' && !userLocation) {
+        setUserLocation({
+          latitude: currentUser.latitude,
+          longitude: currentUser.longitude,
+          updatedAt: currentUser.locationUpdatedAt || new Date().toISOString(),
+        });
+      }
+    }
+  }, [currentUser?.id, currentUser?.latitude, currentUser?.longitude, currentUser?.searchRadiusKm, currentUser?.locationSharingEnabled]);
+
+  // Privacy-Safe Location & Nearby Matching Handlers
+  const updateLocationInFirestore = async (lat: number, lon: number, accuracy?: number) => {
+    if (!currentUser) return;
+    const nowIso = new Date().toISOString();
+    const geohash = encodeGeohash(lat, lon, 7);
+
+    // Update in memory state immediately
+    setCurrentUser(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        latitude: lat,
+        longitude: lon,
+        geohash,
+        locationUpdatedAt: nowIso,
+      };
+    });
+
+    // Background Firestore write
+    try {
+      const userRef = doc(db, 'users', currentUser.id);
+      await updateDoc(userRef, {
+        latitude: lat,
+        longitude: lon,
+        geohash,
+        locationUpdatedAt: nowIso,
+      });
+    } catch (err) {
+      console.warn('Location Firestore update notice:', err);
+    }
+  };
+
+  const requestLocationPermission = async (forceUpdate: boolean = false): Promise<boolean> => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setLocationPermissionStatus('unsupported');
+      setLocationError('आपका डिवाइस या ब्राउज़र लोकेशन सपोर्ट नहीं करता है।');
+      return false;
+    }
+
+    setIsRequestingLocation(true);
+    setLocationError(null);
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+          const nowIso = new Date().toISOString();
+
+          const locObj: UserLocationCoordinates = {
+            latitude: lat,
+            longitude: lon,
+            accuracy,
+            updatedAt: nowIso,
+          };
+
+          setUserLocation(locObj);
+          try {
+            localStorage.setItem('apna_user_location', JSON.stringify(locObj));
+          } catch (e) {
+            console.warn('LocalStorage save notice:', e);
+          }
+          setLocationPermissionStatus('granted');
+          setIsRequestingLocation(false);
+
+          await updateLocationInFirestore(lat, lon, accuracy);
+          sounds.play('match');
+          resolve(true);
+        },
+        (error) => {
+          console.warn('Geolocation error:', error.message);
+          setIsRequestingLocation(false);
+          if (error.code === error.PERMISSION_DENIED) {
+            setLocationPermissionStatus('denied');
+            setLocationError('लोकेशन अनुमति अस्वीकृत कर दी गई। आप ज़िले के आधार पर मैच देख सकते हैं.');
+          } else {
+            setLocationPermissionStatus('prompt');
+            setLocationError('लोकेशन प्राप्त करने में असमर्थ। ज़िला आधारित मैचिंग चालू है।');
+          }
+          resolve(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        }
+      );
+    });
+  };
+
+  const setSearchRadiusKm = (radius: NearbyRadiusOption) => {
+    setSearchRadiusKmState(radius);
+    if (currentUser) {
+      setCurrentUser(prev => prev ? { ...prev, searchRadiusKm: radius } : prev);
+      updateDoc(doc(db, 'users', currentUser.id), { searchRadiusKm: radius }).catch(err =>
+        console.warn('Search radius update notice:', err)
+      );
+    }
+  };
+
+  const toggleLocationSharing = async (enabled?: boolean) => {
+    const nextVal = typeof enabled === 'boolean' ? enabled : !locationSharingEnabled;
+    setLocationSharingEnabled(nextVal);
+    if (currentUser) {
+      setCurrentUser(prev => prev ? { ...prev, locationSharingEnabled: nextVal } : prev);
+      try {
+        await updateDoc(doc(db, 'users', currentUser.id), { locationSharingEnabled: nextVal });
+      } catch (err) {
+        console.warn('Location sharing update notice:', err);
+      }
+    }
+  };
+
+  const getNearbyProfiles = (customRadius?: number): NearbyUserCard[] => {
+    const radius = customRadius || searchRadiusKm || 10;
+
+    // Use exact user coordinates if available, otherwise gracefully fallback to district centroid
+    const myLoc = userLocation && typeof userLocation.latitude === 'number'
+      ? { lat: userLocation.latitude, lon: userLocation.longitude, isEstimated: false }
+      : currentUser ? getProfileLocation(currentUser) : { lat: 24.2087, lon: 84.8722, isEstimated: true };
+
+    const candidates = allProfiles.filter(p => {
+      if (!p || !p.id) return false;
+      // Exclude self
+      if (currentUser && p.id === currentUser.id) return false;
+      // Exclude banned / suspended / inactive
+      if (p.isBanned || p.isSuspended || p.isActive === false) return false;
+      // Exclude blocked users
+      if (blockedUsers.some(b => b.blockedUserId === p.id)) return false;
+      // Exclude users with disabled location sharing
+      if (p.locationSharingEnabled === false) return false;
+      // Gender filter matching lookingFor
+      if (currentUser && currentUser.lookingFor !== 'everyone') {
+        if (currentUser.lookingFor !== p.gender) return false;
+      }
+      return true;
+    });
+
+    const nearbyCards: NearbyUserCard[] = [];
+
+    for (const p of candidates) {
+      const candidateLoc = getProfileLocation(p);
+      const distanceKm = calculateDistanceKm(myLoc.lat, myLoc.lon, candidateLoc.lat, candidateLoc.lon);
+
+      if (distanceKm <= radius) {
+        const distInfo = getDistanceInfo(distanceKm);
+        const { score, mutualInterests } = calculateNearbyRankingScore(currentUser, p, distanceKm, radius);
+
+        nearbyCards.push({
+          profile: p,
+          distanceKm,
+          distanceCategory: distInfo.category,
+          distanceLabel: distInfo.displayLabel,
+          categoryLabel: distInfo.categoryLabel,
+          mutualInterests,
+          rankingScore: score,
+          isEstimatedLocation: candidateLoc.isEstimated || myLoc.isEstimated,
+        });
+      }
+    }
+
+    // Sort nearest first by default, with higher compatibility ranking as secondary
+    nearbyCards.sort((a, b) => {
+      if (Math.abs(a.distanceKm - b.distanceKm) > 0.4) {
+        return a.distanceKm - b.distanceKm;
+      }
+      return b.rankingScore - a.rankingScore;
+    });
+
+    return nearbyCards;
+  };
 
   // Authentication Handlers
   const loginWithGoogle = async (): Promise<boolean> => {

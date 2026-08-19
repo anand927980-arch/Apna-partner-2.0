@@ -30,6 +30,13 @@ export interface UserProfile {
   audioBioURL?: string;
   dietPreference?: 'vegetarian' | 'non_vegetarian' | 'eggetarian' | 'vegan';
   blockedPhoneNumbers?: string[];
+  // Privacy-Safe Location Fields (Stored securely on Firestore, exact lat/lon never exposed on public cards)
+  latitude?: number;
+  longitude?: number;
+  geohash?: string;
+  locationUpdatedAt?: string;
+  locationSharingEnabled?: boolean;
+  searchRadiusKm?: number; // 1 | 5 | 10 | 25 | 50 (default: 10)
   isPremium: boolean;
   isOnline?: boolean;
   lastActive: string;
@@ -162,3 +169,24 @@ export interface AdminStatistics {
   pendingReports: number;
   premiumSubscribers: number;
 }
+
+export interface NearbyUserCard {
+  profile: UserProfile;
+  distanceKm: number;
+  distanceCategory: '<1km' | '1-5km' | '5-10km' | '>10km';
+  distanceLabel: string;
+  categoryLabel: string;
+  mutualInterests: string[];
+  rankingScore: number;
+  isEstimatedLocation: boolean;
+}
+
+export type NearbyRadiusOption = 1 | 5 | 10 | 25 | 50;
+
+export interface UserLocationCoordinates {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  updatedAt: string;
+}
+

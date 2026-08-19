@@ -6,11 +6,35 @@ export interface Translations {
   taglineSub: string;
   nav: {
     discover: string;
+    nearby: string;
     likes: string;
     matches: string;
     profile: string;
     admin: string;
     settings: string;
+  };
+  nearby: {
+    title: string;
+    subtitle: string;
+    permissionTitle: string;
+    permissionDesc: string;
+    allowPermission: string;
+    continueDistrict: string;
+    radiusLabel: string;
+    distanceFilter: string;
+    noUsers: string;
+    noUsersDesc: string;
+    expandRadius: string;
+    updateLocation: string;
+    locationUpdated: string;
+    locationSharingOn: string;
+    locationSharingOff: string;
+    nearYou: string;
+    mutualInterests: string;
+    compatibility: string;
+    like: string;
+    pass: string;
+    viewProfile: string;
   };
   discover: {
     noMoreProfiles: string;
@@ -89,11 +113,35 @@ export const TRANSLATIONS: Record<AppLanguage, Translations> = {
     taglineSub: 'झारखंड और चतरा का सबसे सुरक्षित डेटिंग मंच',
     nav: {
       discover: 'खोजें',
+      nearby: 'आसपास (Nearby)',
       likes: 'पसंद',
       matches: 'जोड़ियाँ',
       profile: 'प्रोफाइल',
       admin: 'प्रशासक',
       settings: 'सेटिंग्स',
+    },
+    nearby: {
+      title: 'आपके आसपास के लोग',
+      subtitle: 'सुरक्षित लोकेशन आधारित मैचिंग • केवल अनुमानित दूरी',
+      permissionTitle: 'लोकेशन अनुमति आवश्यक है',
+      permissionDesc: 'Nearby matches देखने के लिए आपकी location permission जरूरी है। आपकी exact location दूसरे users को नहीं दिखाई जाएगी.',
+      allowPermission: 'लोकेशन अनुमति दें',
+      continueDistrict: 'ज़िले के आधार पर देखें',
+      radiusLabel: 'दायरा चुनें',
+      distanceFilter: 'दूरी दायरा',
+      noUsers: 'इस दायरे में कोई प्रोफाइल नहीं मिली',
+      noUsersDesc: 'अधिक साथी खोजने के लिए ऊपर से दायरा (Radius) 25 km या 50 km तक बढ़ाएं।',
+      expandRadius: 'दायरा बढ़ाएं (50 km)',
+      updateLocation: 'मेरी लोकेशन अपडेट करें',
+      locationUpdated: 'लोकेशन सफलतापूर्वक अपडेट हो गई!',
+      locationSharingOn: 'लोकेशन शेयरिंग चालू है',
+      locationSharingOff: 'लोकेशन शेयरिंग बंद है',
+      nearYou: 'आपके पास',
+      mutualInterests: 'समान रुचियां',
+      compatibility: 'मैचिंग स्कोर',
+      like: 'पसंद करें',
+      pass: 'छोड़ें',
+      viewProfile: 'प्रोफाइल देखें',
     },
     discover: {
       noMoreProfiles: 'फिलहाल सभी प्रोफाइल देख चुके हैं',
@@ -177,11 +225,35 @@ export const TRANSLATIONS: Record<AppLanguage, Translations> = {
     taglineSub: 'झारखंड आर चतरा केर खांटी डेटिंग ऐप',
     nav: {
       discover: 'खोजा',
+      nearby: 'आसपास (Nearby)',
       likes: 'पसंद',
       matches: 'जोड़ी',
       profile: 'प्रोफाइल',
       admin: 'एडमिन',
       settings: 'सेटिंग',
+    },
+    nearby: {
+      title: 'तोहार आसपास केर लोग',
+      subtitle: 'सुरक्षित लोकेशन आधारित संगम • खाली अंदाजन दूरी',
+      permissionTitle: 'लोकेशन के इजाजत जरूरी हे',
+      permissionDesc: 'Nearby matches देखे लेल तोहार लोकेशन जरूरी हे। तोहार पक्का पता ककरो ना देखावल जेतई।',
+      allowPermission: 'लोकेशन इजाजत देवा',
+      continueDistrict: 'जिला के हिसाब से देखा',
+      radiusLabel: 'दूरी दायरा चुना',
+      distanceFilter: 'दूरी दायरा',
+      noUsers: 'ई दायरा म कोनो प्रोफाइल नाय भेटल',
+      noUsersDesc: 'आउर साथी खोजे लेल ऊपर से दायरा 25 km या 50 km बढ़ा के देखा।',
+      expandRadius: 'दायरा बढ़ाबा (50 km)',
+      updateLocation: 'अपन लोकेशन ताजा करा',
+      locationUpdated: 'लोकेशन बढ़िया से अपडेट भेल!',
+      locationSharingOn: 'लोकेशन शेयरिंग चालू हे',
+      locationSharingOff: 'लोकेशन शेयरिंग बंद हे',
+      nearYou: 'तोहार तनी भीरी',
+      mutualInterests: 'मिलता-जुलता शौक',
+      compatibility: 'जोड़ीदार स्कोर',
+      like: 'पसंद करा',
+      pass: 'छोड़ा',
+      viewProfile: 'प्रोफाइल देखा',
     },
     discover: {
       noMoreProfiles: 'एखनी सब प्रोफाइल देख लेलहा',
@@ -264,11 +336,35 @@ export const TRANSLATIONS: Record<AppLanguage, Translations> = {
     taglineSub: 'छोटानागपुर आर चतरा केर आपन संगम',
     nav: {
       discover: 'खोजा',
+      nearby: 'भीरी (Nearby)',
       likes: 'पसंद',
       matches: 'जोड़ी',
       profile: 'प्रोफाइल',
       admin: 'एडमिन',
       settings: 'सेटिंग',
+    },
+    nearby: {
+      title: 'तोहरे आसपास केर साथी',
+      subtitle: 'सुरक्षित लोकेशन आधारित मैचिंग • खाली अंदाजन दूरी',
+      permissionTitle: 'लोकेशन के मंजूरी जरूरी हे',
+      permissionDesc: 'Nearby matches देखेक लेल तोहार लोकेशन जरूरी हे। तोहार पक्का पता ककरो ना देखावल जाई।',
+      allowPermission: 'लोकेशन मंजूरी देवा',
+      continueDistrict: 'जिला के हिसाब से देखा',
+      radiusLabel: 'दूरी दायरा चुना',
+      distanceFilter: 'दूरी दायरा',
+      noUsers: 'ई दायरा मे कोनो प्रोफाइल नई मिललक',
+      noUsersDesc: 'आउर साथी खोजेक लेल ऊपर से दायरा 25 km या 50 km बढ़ा के देखा।',
+      expandRadius: 'दायरा बढ़ाबू (50 km)',
+      updateLocation: 'अपन लोकेशन ताजा करा',
+      locationUpdated: 'लोकेशन अपडेट होय गेल!',
+      locationSharingOn: 'लोकेशन शेयरिंग चालू हे',
+      locationSharingOff: 'लोकेशन शेयरिंग बंद हे',
+      nearYou: 'तोहरे भीरी',
+      mutualInterests: 'मिलता-जुलता शौक',
+      compatibility: 'जोड़ीदार स्कोर',
+      like: 'पसंद करा',
+      pass: 'छोड़ा',
+      viewProfile: 'प्रोफाइल देखा',
     },
     discover: {
       noMoreProfiles: 'एखन सब प्रोफाइल देख लेली',
@@ -350,11 +446,35 @@ export const TRANSLATIONS: Record<AppLanguage, Translations> = {
     taglineSub: "Jharkhand & Chatra's Safe Verified Dating Community",
     nav: {
       discover: 'Discover',
+      nearby: 'Nearby',
       likes: 'Likes',
       matches: 'Matches',
       profile: 'Profile',
       admin: 'Admin',
       settings: 'Settings',
+    },
+    nearby: {
+      title: 'People Near You',
+      subtitle: 'Privacy-Safe Location Matching • Approximate Distance Only',
+      permissionTitle: 'Location Permission Needed',
+      permissionDesc: 'Nearby matches देखने के लिए आपकी location permission जरूरी है। आपकी exact location दूसरे users को नहीं दिखाई जाएगी.',
+      allowPermission: 'Allow Location Access',
+      continueDistrict: 'Continue with District',
+      radiusLabel: 'Search Radius',
+      distanceFilter: 'Distance Radius',
+      noUsers: 'No profiles found in this radius',
+      noUsersDesc: 'Try expanding your search radius to 25 km or 50 km to find more people nearby.',
+      expandRadius: 'Expand Radius (50 km)',
+      updateLocation: 'Update My Location',
+      locationUpdated: 'Location successfully refreshed!',
+      locationSharingOn: 'Nearby Location Sharing ON',
+      locationSharingOff: 'Nearby Location Sharing OFF',
+      nearYou: 'Near You',
+      mutualInterests: 'Mutual Interests',
+      compatibility: 'Match Score',
+      like: 'Like',
+      pass: 'Pass',
+      viewProfile: 'View Profile',
     },
     discover: {
       noMoreProfiles: 'You have seen all nearby profiles',
